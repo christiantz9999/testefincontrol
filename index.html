@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinControl - Gestão Profissional</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        /* =========================================
+           VARIÁVEIS E ESTILOS GERAIS (Otimizado para PC e Celular)
+        ========================================= */
+        :root {
+            --primary: #0056b3;
+            --secondary: #f4f6f9;
+            --text-dark: #333;
+            --text-light: #666;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --white: #fff;
+            --border: #ddd;
+            --sidebar-width: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--secondary); color: var(--text-dark); overflow-x: hidden; }
+        
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .grid { display: grid; }
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: var(--white); font-weight: 600; transition: background 0.3s; font-size: 14px; }
+        .btn-primary { background-color: var(--primary); }
+        .btn-success { background-color: var(--success); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-warning { background-color: var(--warning); color: #000; }
+        .btn:hover { opacity: 0.85; }
+
+        /* =========================================
+           TELA DE LOGIN
+        ========================================= */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(135deg, var(--primary), #002d5e); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .login-box { background: var(--white); padding: 40px; border-radius: 10px; box-shadow: 0 15px 30px rgba(0,0,0,0.3); width: 90%; max-width: 400px; text-align: center; }
+        .login-box h1 { margin-bottom: 10px; color: var(--primary); font-size: 28px; }
+        .login-box p { color: var(--text-light); margin-bottom: 25px; font-size: 14px; }
+        .form-group { margin-bottom: 18px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 14px; font-weight: 600; color: var(--text-dark); }
+        .form-control { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 5px; outline: none; font-size: 14px; transition: 0.3s; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 5px rgba(0,86,179,0.2); }
+
+        /* =========================================
+           LAYOUT PRINCIPAL E RESPONSIVIDADE
+        ========================================= */
+        #app-layout { display: flex; min-height: 100vh; }
+        .sidebar { width: var(--sidebar-width); background: #1e2a38; color: var(--white); display: flex; flex-direction: column; transition: transform 0.3s ease; z-index: 1000; }
+        .sidebar-header { padding: 25px 20px; text-align: center; background: #151e28; border-bottom: 1px solid #2c3e50; }
+        .sidebar-header img { max-width: 100%; max-height: 70px; margin-bottom: 15px; border-radius: 4px; }
+        .nav-list { list-style: none; flex: 1; overflow-y: auto; padding: 10px 0; }
+        .nav-item { padding: 15px 25px; cursor: pointer; border-left: 4px solid transparent; transition: 0.2s; font-size: 15px; }
+        .nav-item:hover, .nav-item.active { background: #2c3e50; border-left-color: var(--primary); }
+        .nav-item i { margin-right: 12px; width: 20px; text-align: center; font-size: 16px; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; background: var(--secondary); width: 100%; }
+        .topbar { background: var(--white); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .topbar-right { display: flex; align-items: center; gap: 20px; font-weight: 600; }
+        .content-area { padding: 30px; flex: 1; }
+
+        /* Componentes */
+        .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: var(--white); padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: left; }
+        .card h3 { font-size: 14px; color: var(--text-light); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .card p { font-size: 28px; font-weight: bold; color: var(--primary); }
+        
+        .section-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 25px; border-bottom: 2px solid var(--border); padding-bottom: 10px; }
+        .table-responsive { overflow-x: auto; background: var(--white); border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { background: #f8f9fa; font-weight: 600; color: var(--text-dark); }
+        tr:hover { background: #f1f5f9; }
+        .action-btns button { margin-right: 5px; margin-bottom: 5px; padding: 6px 12px; font-size: 13px; border-radius: 4px; }
+
+        /* Modais */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 10px; }
+        .modal-content { background: var(--white); width: 100%; max-width: 850px; max-height: 90vh; border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .modal-header { padding: 20px; background: var(--primary); color: var(--white); display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: 600; }
+        .modal-body { padding: 25px; overflow-y: auto; flex: 1; background: #fafafa; }
+        .modal-footer { padding: 15px 25px; background: var(--white); border-top: 1px solid var(--border); text-align: right; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+        
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .signature-pad { border: 1px solid #ccc; border-radius: 5px; background: #fff; cursor: crosshair; touch-action: none; width: 100%; height: 150px; }
+        #print-area { position: absolute; left: -9999px; top: -9999px; background: white; width: 800px; padding: 40px; color: black; font-family: Arial, sans-serif; box-sizing: border-box; }
+
+        /* =========================================
+           REGRAS PARA CELULAR E TABLET
+        ========================================= */
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; height: 100vh; transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .topbar { padding: 15px; }
+            .topbar-left i { display: inline-block !important; cursor: pointer; font-size: 22px; color: var(--primary); margin-right: 15px; }
+            .content-area { padding: 15px; }
+            .dashboard-cards { grid-template-columns: 1fr; }
+            .modal-content { max-height: 95vh; border-radius: 5px; }
+            .modal-body { padding: 15px; }
+            .section-header h2 { font-size: 20px; }
+            .topbar-right span { display: none; } /* Oculta nome admin no celular */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h1><i class="fas fa-chart-line"></i> FinControl</h1>
+            <p>Acesse o sistema gerencial</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Usuário</label>
+                    <input type="text" id="login-user" class="form-control" placeholder="admin" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="login-pass" class="form-control" placeholder="123" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:15px; padding:12px;">Entrar no Sistema</button>
+            </form>
+            <p id="login-error" style="color:var(--danger); margin-top:15px; display:none; font-weight:600;">Usuário ou senha incorretos!</p>
+        </div>
+    </div>
+
+    <div id="app-layout" class="hidden">
+        
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <img id="sidebar-logo" src="" alt="Logo" style="display:none;">
+                <h2 id="sidebar-empresa">FinControl</h2>
+            </div>
+            <ul class="nav-list">
+                <li class="nav-item active" data-target="dashboard"><i class="fas fa-home"></i> Dashboard</li>
+                <li class="nav-item" data-target="clientes"><i class="fas fa-users"></i> Clientes</li>
+                <li class="nav-item" data-target="produtos"><i class="fas fa-box-open"></i> Estoque</li>
+                <li class="nav-item" data-target="servicos"><i class="fas fa-tools"></i> Serviços</li>
+                <li class="nav-item" data-target="tecnicos"><i class="fas fa-user-cog"></i> Técnicos</li>
+                <li class="nav-item" data-target="agenda"><i class="fas fa-calendar-alt"></i> Agenda</li>
+                <li class="nav-item" data-target="os"><i class="fas fa-file-invoice"></i> Ordens de Serviço</li>
+                <li class="nav-item" data-target="financeiro"><i class="fas fa-dollar-sign"></i> Financeiro</li>
+                <li class="nav-item" data-target="fiscal"><i class="fas fa-file-signature"></i> Notas e Recibos</li>
+                <li class="nav-item" data-target="configuracoes"><i class="fas fa-cogs"></i> Configurações</li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left" style="display: flex; align-items: center;">
+                    <i class="fas fa-bars hidden" id="menu-toggle"></i>
+                    <span id="current-date" style="font-weight: 500; color: var(--text-light);"></span>
+                </div>
+                <div class="topbar-right">
+                    <span>Administrador</span>
+                    <button id="btn-logout" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                </div>
+            </header>
+
+            <div class="content-area">
+                
+                <section id="view-dashboard" class="view-section">
+                    <div class="section-header"><h2>Visão Geral</h2></div>
+                    <div class="dashboard-cards">
+                        <div class="card"><h3>Total de Clientes</h3><p id="dash-clientes">0</p></div>
+                        <div class="card"><h3>OS em Andamento</h3><p id="dash-os-abertas">0</p></div>
+                        <div class="card"><h3>OS Concluídas</h3><p id="dash-os-concluidas">0</p></div>
+                        <div class="card"><h3>Saldo do Mês</h3><p id="dash-saldo">R$ 0,00</p></div>
+                    </div>
+                    <div class="grid form-grid">
+                        <div class="card">
+                            <h3 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Receitas vs Despesas (Mês)</h3>
+                            <div style="position: relative; height: 250px; width: 100%;"><canvas id="chartFinanceiro"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Status das O.S</h3>
+                            <div style="position: relative; height: 250px; width: 100%;"><canvas id="chartOS"></canvas></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="view-crud" class="view-section hidden">
+                    <div class="section-header">
+                        <h2 id="crud-title">Módulo</h2>
+                        <button class="btn btn-primary" id="btn-add-crud"><i class="fas fa-plus"></i> Novo Registro</button>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <div style="position: relative; width: 100%; max-width: 400px;">
+                            <i class="fas fa-search" style="position: absolute; left: 15px; top: 12px; color: #aaa;"></i>
+                            <input type="text" id="crud-search" class="form-control" placeholder="Pesquisar registros..." style="padding-left: 40px;">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="crud-table">
+                            <thead id="crud-thead"></thead>
+                            <tbody id="crud-tbody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="view-os" class="view-section hidden">
+                    <div class="section-header">
+                        <h2>Ordens de Serviço</h2>
+                        <button class="btn btn-primary" onclick="OSManager.openModal()"><i class="fas fa-plus"></i> Nova O.S</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Nº OS</th><th>Data</th><th>Cliente</th><th>Técnico</th><th>Status</th><th>Valor (R$)</th><th>Ações</th></tr></thead>
+                            <tbody id="os-tbody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+
+
+                <section id="view-financeiro-premium" class="view-section hidden">
+                    <div class="section-header">
+                        <h2><i class="fas fa-dollar-sign"></i> Financeiro Completo</h2>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                            <button class="btn btn-primary" onclick="FinanceiroManager.openModal()"><i class="fas fa-plus"></i> Novo Lançamento</button>
+                            <button class="btn btn-warning" onclick="FinanceiroManager.registrarSangria()"><i class="fas fa-hand-holding-usd"></i> Sangria</button>
+                            <button class="btn btn-success" onclick="FinanceiroManager.gerarRelatorioPDF()"><i class="fas fa-file-pdf"></i> Relatório Mensal</button>
+                            <button class="btn btn-primary" onclick="FinanceiroManager.gerarRelatorioPeriodoPDF()"><i class="fas fa-file-export"></i> PDF por Período</button>
+                        </div>
+                    </div>
+                    <div class="dashboard-cards">
+                        <div class="card"><h3>Receitas do Mês</h3><p id="fin-receitas">R$ 0,00</p></div>
+                        <div class="card"><h3>Despesas do Mês</h3><p id="fin-despesas">R$ 0,00</p></div>
+                        <div class="card"><h3>Sangrias do Mês</h3><p id="fin-sangrias">R$ 0,00</p></div>
+                        <div class="card"><h3>Saldo do Caixa</h3><p id="fin-saldo">R$ 0,00</p></div>
+                    </div>
+                    <div class="grid form-grid" style="margin-bottom:25px;">
+                        <div class="card">
+                            <h3 style="margin-bottom:15px;"><i class="fas fa-calendar-day"></i> Fechamento Diário de Caixa</h3>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Data</label><input type="date" id="fin-fecha-dia" class="form-control"></div>
+                                <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" style="width:100%;" onclick="FinanceiroManager.fechamentoDiario()">Gerar Fechamento Diário</button></div>
+                            </div>
+                            <div id="fin-fechamento-dia-result" style="font-size:14px; line-height:1.7;"></div>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom:15px;"><i class="fas fa-calendar-check"></i> Fechamento Mensal de Caixa</h3>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Mês</label><input type="month" id="fin-fecha-mes" class="form-control"></div>
+                                <div class="form-group"><label>&nbsp;</label><button class="btn btn-success" style="width:100%;" onclick="FinanceiroManager.fechamentoMensal()">Gerar Fechamento Mensal</button></div>
+                            </div>
+                            <div id="fin-fechamento-mes-result" style="font-size:14px; line-height:1.7;"></div>
+                        </div>
+                    </div>
+                    <div class="grid form-grid" style="margin-bottom:25px;">
+                        <div class="card">
+                            <h3 style="margin-bottom:15px;"><i class="fas fa-file-pdf"></i> Relatórios PDF por Período</h3>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Data Inicial</label><input type="date" id="fin-rel-ini" class="form-control"></div>
+                                <div class="form-group"><label>Data Final</label><input type="date" id="fin-rel-fim" class="form-control"></div>
+                                <div class="form-group"><label>Mês/Ano</label><input type="month" id="fin-rel-mes" class="form-control"></div>
+                                <div class="form-group"><label>Tipo</label><select id="fin-rel-tipo" class="form-control"><option value="periodo">Data inicial e final</option><option value="semanal">Semana da data inicial</option><option value="mensal">Mês/Ano selecionado</option></select></div>
+                                <div class="form-group"><label>&nbsp;</label><button class="btn btn-success" style="width:100%;" onclick="FinanceiroManager.gerarRelatorioPeriodoPDF()"><i class="fas fa-file-pdf"></i> Exportar PDF</button></div>
+                            </div>
+                            <p style="font-size:13px; color:var(--text-light); margin-top:8px;">O relatório sai com resumo, gráfico, lançamentos do sistema e conciliação com extrato Nubank importado.</p>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom:15px;"><i class="fas fa-university"></i> Nubank Empresas / Conciliação</h3>
+                            <p style="font-size:13px; color:var(--text-light); margin-bottom:10px;">Por segurança, esta versão local importa extrato CSV/OFX do Nubank Empresas. Conexão automática direta depende de API oficial autorizada.</p>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Extrato Nubank CSV/OFX</label><input type="file" id="nubank-file" class="form-control" accept=".csv,.ofx,.txt"></div>
+                                <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" style="width:100%;" onclick="FinanceiroManager.importarExtratoNubank()"><i class="fas fa-plug"></i> Importar Extrato</button></div>
+                                <div class="form-group"><label>&nbsp;</label><button class="btn btn-warning" style="width:100%;" onclick="FinanceiroManager.limparExtratoNubank()"><i class="fas fa-broom"></i> Limpar Extrato</button></div>
+                            </div>
+                            <div id="nubank-result" style="font-size:14px; line-height:1.7;"></div>
+                        </div>
+                    </div>
+                    <div class="grid form-grid" style="margin-bottom:25px;">
+                        <div class="card">
+                            <h3 style="margin-bottom:15px;"><i class="fab fa-whatsapp"></i> Cobrança Automática no WhatsApp</h3>
+                            <p style="font-size:13px; color:var(--text-light); margin-bottom:10px;">Use as variáveis: {cliente}, {valor}, {descricao}, {empresa}, {data}.</p>
+                            <textarea id="fin-msg-cobranca" class="form-control" rows="5" oninput="FinanceiroManager.salvarMensagemCobranca()">Olá, {cliente}! Tudo bem? Aqui é da {empresa}. Identificamos uma cobrança referente a {descricao}, no valor de {valor}, com vencimento/data em {data}. Poderia verificar e nos retornar, por gentileza? Agradecemos a atenção.</textarea>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom:15px;"><i class="fas fa-balance-scale"></i> Caixa Conciliado</h3>
+                            <div id="fin-caixa-conciliado" style="font-size:14px; line-height:1.7;"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid form-grid" style="margin-bottom:25px;">
+                        <div class="card">
+                            <h3 style="margin-bottom:15px;"><i class="fas fa-user-cog"></i> Balanço Financeiro do Técnico</h3>
+                            <div class="form-grid">
+                                <div class="form-group"><label>Técnico</label><select id="fin-tecnico-semana" class="form-control"></select></div>
+                                <div class="form-group"><label>Data da Semana</label><input type="date" id="fin-semana-data" class="form-control"></div>
+                                <div class="form-group"><label>Mês</label><input type="month" id="fin-tecnico-mes" class="form-control"></div>
+                                <div class="form-group"><label>% do Técnico sobre Serviços</label><input type="number" min="0" max="100" step="0.01" id="fin-comissao-tecnico" class="form-control" placeholder="Ex: 40"></div>
+                                <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" style="width:100%;" onclick="FinanceiroManager.balancoTecnicoSemana()">Calcular Semana</button></div>
+                                <div class="form-group"><label>&nbsp;</label><button class="btn btn-success" style="width:100%;" onclick="FinanceiroManager.balancoTecnicoMes()">Calcular Mês</button></div>
+                            </div>
+                            <div id="fin-tecnico-result" style="font-size:14px; line-height:1.7;"></div>
+                        </div>
+                        <div class="card">
+                            <h3 style="margin-bottom:15px;"><i class="fas fa-user"></i> Controle Financeiro Pessoal</h3>
+                            <p style="font-size:14px; color:var(--text-light); margin-bottom:15px;">Use a categoria <b>Pessoal</b> nos lançamentos para separar finanças pessoais das empresariais.</p>
+                            <div id="fin-pessoal-result" style="font-size:14px; line-height:1.7;"></div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Tipo</th><th>Data</th><th>Categoria</th><th>Cliente</th><th>Descrição</th><th>Forma</th><th>Valor</th><th>Cobrança</th><th>Ações</th></tr></thead>
+                            <tbody id="fin-tbody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="view-produtos-premium" class="view-section hidden">
+                    <div class="section-header">
+                        <h2><i class="fas fa-box-open"></i> Controle Completo de Produtos</h2>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                            <button class="btn btn-primary" onclick="CrudEngine.modal()"><i class="fas fa-plus"></i> Novo Produto</button>
+                            <button class="btn btn-success" onclick="ProdutosManager.relatorioMensalPDF()"><i class="fas fa-file-pdf"></i> Relatório Mensal</button>
+                        </div>
+                    </div>
+                    <div class="dashboard-cards">
+                        <div class="card"><h3>Total em Estoque</h3><p id="prod-qtd">0</p></div>
+                        <div class="card"><h3>Valor Total de Custo</h3><p id="prod-custo">R$ 0,00</p></div>
+                        <div class="card"><h3>Valor Total de Venda</h3><p id="prod-venda">R$ 0,00</p></div>
+                        <div class="card"><h3>Lucro Potencial</h3><p id="prod-lucro">R$ 0,00</p></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Produto</th><th>Custo</th><th>Venda</th><th>Estoque</th><th>Valor em Estoque</th><th>Ações</th></tr></thead>
+                            <tbody id="prod-tbody"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="view-configuracoes" class="view-section hidden">
+                    <div class="section-header"><h2>Configurações do Sistema</h2></div>
+                    <div class="grid form-grid">
+                        <div class="card">
+                            <h3 style="margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:10px;"><i class="fas fa-building"></i> Dados da Empresa</h3>
+                            <form id="form-config">
+                                <div class="form-group"><label>Nome Fantasia</label><input type="text" id="cfg-nome" class="form-control"></div>
+                                <div class="form-group"><label>CNPJ</label><input type="text" id="cfg-cnpj" class="form-control"></div>
+                                <div class="form-group"><label>Endereço Completo</label><input type="text" id="cfg-endereco" class="form-control"></div>
+                                <div class="form-group"><label>Telefone / WhatsApp</label><input type="text" id="cfg-telefone" class="form-control"></div>
+                                <div class="form-group">
+                                    <label>Logomarca (Máx 1MB)</label>
+                                    <input type="file" id="cfg-logo" accept="image/png, image/jpeg" class="form-control">
+                                    <img id="cfg-logo-preview" style="max-width: 180px; margin-top: 15px; border-radius: 5px; display:none;">
+                                </div>
+                                <div class="form-group"><label>Cor do Tema</label><input type="color" id="cfg-cor" class="form-control" style="height:45px; padding:5px;"></div>
+                                <button type="button" class="btn btn-success" style="width: 100%;" onclick="ConfigManager.save()"><i class="fas fa-save"></i> Salvar</button>
+                            </form>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 style="margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:10px;"><i class="fas fa-database"></i> Backup de Dados</h3>
+                            <p style="font-size: 14px; color:var(--text-light); margin-bottom: 20px;">Exporte backups regularmente para não perder informações caso limpe seu navegador.</p>
+                            <button class="btn btn-primary" style="width: 100%; margin-bottom: 30px;" onclick="BackupManager.export()"><i class="fas fa-download"></i> Baixar Backup (.json)</button>
+                            
+                            <h4 style="margin-bottom:15px; color: var(--text-dark);">Restaurar Backup</h4>
+                            <input type="file" id="backup-file" accept=".json" class="form-control" style="margin-bottom:15px;">
+                            <button class="btn btn-warning" style="width: 100%; margin-bottom: 40px;" onclick="BackupManager.import()"><i class="fas fa-upload"></i> Importar Dados</button>
+                            
+                            <button class="btn btn-danger" style="width: 100%;" onclick="BackupManager.clearAll()"><i class="fas fa-trash-alt"></i> Resetar Sistema</button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <div id="modal-crud" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modal-crud-title">Adicionar</span>
+                <i class="fas fa-times" style="cursor:pointer;" onclick="ModalManager.close('modal-crud')"></i>
+            </div>
+            <div class="modal-body"><form id="form-crud" class="form-grid"></form></div>
+            <div class="modal-footer">
+                <button class="btn" style="background:#888; color:#fff;" onclick="ModalManager.close('modal-crud')">Cancelar</button>
+                <button class="btn btn-success" id="btn-save-crud"><i class="fas fa-check"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-os" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modal-os-title">Ordem de Serviço</span>
+                <i class="fas fa-times" style="cursor:pointer;" onclick="ModalManager.close('modal-os')"></i>
+            </div>
+            <div class="modal-body">
+                <form id="form-os">
+                    <div class="form-grid" style="margin-bottom: 20px; background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
+                        <div class="form-group"><label>Cliente*</label><select id="os-cliente" class="form-control" required></select></div>
+                        <div class="form-group"><label>Técnico</label><select id="os-tecnico" class="form-control"></select></div>
+                        <div class="form-group"><label>Data*</label><input type="date" id="os-data" class="form-control" required></div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="os-status" class="form-control">
+                                <option>Aberta</option><option>Em Andamento</option><option>Aguardando Peças</option><option>Concluída</option><option>Cancelada</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
+                        <label>Diagnóstico / Descrição</label>
+                        <textarea id="os-descricao" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-grid" style="margin-bottom: 20px; background: #fff; padding: 15px; border: 1px solid #eee; border-radius: 8px;">
+                        <div class="form-group"><label>Produtos Usados</label><input type="text" id="os-produto" class="form-control"></div>
+                        <div class="form-group"><label>Serviço Executado</label><input type="text" id="os-servico" class="form-control"></div>
+                        <div class="form-group"><label>Valor Total (R$)*</label><input type="number" step="0.01" id="os-valor" class="form-control" required></div>
+                        <div class="form-group">
+                            <label>Pagamento</label>
+                            <select id="os-pagamento" class="form-control">
+                                <option>Dinheiro</option><option>PIX</option><option>Cartão de Crédito</option><option>Cartão de Débito</option><option>Boleto</option><option>A Combinar</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-grid" style="margin-top:20px; background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
+                        <div style="text-align: center; width: 100%;">
+                            <label style="display:block; margin-bottom:10px; font-weight: bold; color: var(--primary);">Assinatura Cliente</label>
+                            <canvas id="canvas-cliente" class="signature-pad"></canvas>
+                            <button type="button" class="btn" style="background:#e0e0e0; color:#333; margin-top:10px;" onclick="OSManager.clearPad('canvas-cliente')"><i class="fas fa-eraser"></i> Limpar</button>
+                        </div>
+                        <div style="text-align: center; width: 100%;">
+                            <label style="display:block; margin-bottom:10px; font-weight: bold; color: var(--primary);">Assinatura Técnico</label>
+                            <canvas id="canvas-tecnico" class="signature-pad"></canvas>
+                            <button type="button" class="btn" style="background:#e0e0e0; color:#333; margin-top:10px;" onclick="OSManager.clearPad('canvas-tecnico')"><i class="fas fa-eraser"></i> Limpar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-print-os" class="btn btn-warning" style="display:none; margin-right: auto;" onclick="OSManager.generatePDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+                <button class="btn" style="background:#888; color:#fff;" onclick="ModalManager.close('modal-os')">Cancelar</button>
+                <button class="btn btn-success" onclick="OSManager.save()"><i class="fas fa-check"></i> Salvar O.S</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div id="modal-financeiro" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modal-fin-title">Lançamento Financeiro</span>
+                <i class="fas fa-times" style="cursor:pointer;" onclick="ModalManager.close('modal-financeiro')"></i>
+            </div>
+            <div class="modal-body">
+                <form id="form-financeiro" class="form-grid">
+                    <div class="form-group"><label>Tipo*</label><select id="fin-tipo" class="form-control" required><option>Receita</option><option>Despesa</option><option>Sangria</option></select></div>
+                    <div class="form-group"><label>Data*</label><input type="date" id="fin-data" class="form-control" required></div>
+                    <div class="form-group"><label>Categoria*</label><select id="fin-categoria" class="form-control"><option>Empresa</option><option>Pessoal</option><option>Material</option><option>Mão de Obra</option><option>Produto</option><option>Serviço</option><option>Imposto</option><option>Outros</option></select></div>
+                    <div class="form-group"><label>Forma de Pagamento</label><select id="fin-pagamento" class="form-control"><option>Dinheiro</option><option>PIX</option><option>Cartão de Crédito</option><option>Cartão de Débito</option><option>Boleto</option><option>Transferência</option><option>Outros</option></select></div>
+                    <div class="form-group"><label>Cliente para Cobrança</label><select id="fin-cliente" class="form-control"><option value="">Nenhum</option></select></div>
+                    <div class="form-group"><label>Descrição*</label><input type="text" id="fin-descricao" class="form-control" required></div>
+                    <div class="form-group"><label>Valor (R$)*</label><input type="number" step="0.01" id="fin-valor" class="form-control" required></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" style="background:#888; color:#fff;" onclick="ModalManager.close('modal-financeiro')">Cancelar</button>
+                <button class="btn btn-success" onclick="FinanceiroManager.save()"><i class="fas fa-check"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-area">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #333; padding-bottom:15px; margin-bottom:25px;">
+            <img id="print-logo" src="" style="max-height:90px; max-width:200px;">
+            <div style="text-align:right;">
+                <h1 style="font-size:26px; margin:0; color:#111;" id="print-empresa-nome">Empresa</h1>
+                <p style="margin:5px 0 0 0; font-size:14px; color:#444;" id="print-empresa-dados"></p>
+            </div>
+        </div>
+        <div style="text-align:center; margin-bottom:25px; background:#f4f4f4; padding:12px; border:1px solid #ccc; font-size:20px; font-weight:bold;">
+            ORDEM DE SERVIÇO Nº <span id="print-os-num"></span>
+        </div>
+        <table style="width:100%; margin-bottom:25px; border-collapse:collapse;">
+            <tr><td style="border:1px solid #333; padding:10px; width:50%;"><b>Cliente:</b> <span id="print-cliente"></span></td><td style="border:1px solid #333; padding:10px; width:50%;"><b>Data:</b> <span id="print-data"></span></td></tr>
+            <tr><td style="border:1px solid #333; padding:10px;"><b>Técnico:</b> <span id="print-tecnico"></span></td><td style="border:1px solid #333; padding:10px;"><b>Status:</b> <span id="print-status"></span></td></tr>
+        </table>
+        <div style="border:1px solid #333; padding:15px; margin-bottom:25px; min-height:120px;">
+            <b style="font-size:16px;">Diagnóstico / Serviço:</b><br><br><span id="print-descricao" style="font-size:15px; line-height:1.5;"></span>
+        </div>
+        <table style="width:100%; margin-bottom:25px; border-collapse:collapse;">
+            <tr><td style="border:1px solid #333; padding:12px;"><b>Produtos:</b> <span id="print-produtos"></span></td></tr>
+            <tr><td style="border:1px solid #333; padding:12px;"><b>Serviços:</b> <span id="print-servicos"></span></td></tr>
+        </table>
+        <div style="text-align:right; font-size:22px; margin-bottom:40px; padding:15px; background:#f9f9f9; border:1px solid #333;">
+            <b>TOTAL: <span style="color:var(--primary);">R$ <span id="print-valor"></span></span></b><br>
+            <span style="font-size:14px; color:#555;">Pagamento: <span id="print-pagto"></span></span>
+        </div>
+        <div style="display:flex; justify-content:space-around; margin-top:60px;">
+            <div style="text-align:center; width: 40%;"><img id="print-ass-cliente" src="" style="max-height:80px; max-width:100%; display:block; margin:0 auto;"><br><div style="border-top:1px solid #333; padding-top:8px; font-weight:bold;">Assinatura do Cliente</div></div>
+            <div style="text-align:center; width: 40%;"><img id="print-ass-tecnico" src="" style="max-height:80px; max-width:100%; display:block; margin:0 auto;"><br><div style="border-top:1px solid #333; padding-top:8px; font-weight:bold;">Assinatura do Técnico</div></div>
+        </div>
+        <div style="text-align:center; font-size:12px; margin-top:50px; color:#555; border-top: 1px dashed #ccc; padding-top:15px;">Documento gerado pelo sistema FinControl.</div>
+    </div>
+
+    <script>
+        // BANCO DE DADOS LOCAL (LocalStorage)
+        const DB_KEY = 'fincontrol_data_v1';
+        let db = {
+            users: [{ user: 'admin', pass: '123' }],
+            config: { nome: 'FinControl Gestão', cnpj: '', endereco: '', telefone: '', logo: '', cor: '#0056b3', proxima_os: 1000, comissao_tecnico: 0 },
+            clientes: [], produtos: [], servicos: [], tecnicos: [], os: [], financeiro: [], agenda: [], fiscal: [], nubank: []
+        };
+
+        function migrateDB() {
+            db = db || {};
+            const defaults = {
+                users: [{ user: 'admin', pass: '123' }],
+                config: { nome: 'FinControl Gestão', cnpj: '', endereco: '', telefone: '', logo: '', cor: '#0056b3', proxima_os: 1000, comissao_tecnico: 0, msg_cobranca: '' },
+                clientes: [], produtos: [], servicos: [], tecnicos: [], os: [], financeiro: [], agenda: [], fiscal: [], nubank: []
+            };
+            Object.keys(defaults).forEach(k => {
+                if(db[k] === undefined || db[k] === null) db[k] = Array.isArray(defaults[k]) ? [] : {...defaults[k]};
+            });
+            if(!Array.isArray(db.users) || !db.users.length) db.users = defaults.users;
+            ['clientes','produtos','servicos','tecnicos','os','financeiro','agenda','fiscal','nubank'].forEach(k => { if(!Array.isArray(db[k])) db[k] = []; });
+            db.config = {...defaults.config, ...(db.config || {})};
+            db.config.comissao_tecnico = Number(db.config.comissao_tecnico) || 0;
+            db.config.proxima_os = Number(db.config.proxima_os) || 1000;
+            db.config.msg_cobranca = db.config.msg_cobranca || 'Olá, {cliente}! Tudo bem? Aqui é da {empresa}. Identificamos uma cobrança referente a {descricao}, no valor de {valor}, com vencimento/data em {data}. Poderia verificar e nos retornar, por gentileza? Agradecemos a atenção.';
+            db.produtos.forEach(p => { if(p.preco_custo === undefined) p.preco_custo = ''; if(p.estoque === undefined) p.estoque = 0; });
+            db.financeiro.forEach(f => { if(!f.categoria) f.categoria = 'Empresa'; if(!f.pagamento) f.pagamento = '-'; if(f.cliente === undefined) f.cliente = ''; });
+            db.os.forEach(o => { if(o.cli === undefined && o.cliente !== undefined) o.cli = o.cliente; if(o.tec === undefined && o.tecnico !== undefined) o.tec = o.tecnico; });
+        }
+
+        function initDB() {
+            try {
+                const saved = localStorage.getItem(DB_KEY);
+                if (saved) db = JSON.parse(saved);
+                migrateDB();
+                saveData();
+                applyTheme();
+            } catch (e) {
+                console.error("Erro banco", e);
+                alert('Não foi possível carregar o banco local. Um backup pode estar corrompido. O sistema seguirá com dados padrão.');
+                localStorage.removeItem(DB_KEY);
+                migrateDB();
+                saveData();
+                applyTheme();
+            }
+        }
+        function saveData() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+        
+        const formatMoeda = (valor) => (Number(valor) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const formatData = (dataStr) => { 
+            if(!dataStr) return '-';
+            const s = String(dataStr).slice(0,10);
+            const p = s.split('-'); 
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : String(dataStr); 
+        };
+
+        // INTERFACE E NAVEGAÇÃO
+        let currentModule = '';
+        let editId = null;
+
+        document.getElementById('current-date').innerText = new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        function applyTheme() {
+            document.documentElement.style.setProperty('--primary', db.config.cor || '#0056b3');
+            document.getElementById('sidebar-empresa').innerText = db.config.nome || 'FinControl';
+            const img = document.getElementById('sidebar-logo');
+            if(db.config.logo) { img.src = db.config.logo; img.style.display = 'inline-block'; }
+            else { img.removeAttribute('src'); img.style.display = 'none'; }
+        }
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+                showView(item.getAttribute('data-target'));
+                if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+            });
+        });
+
+        document.getElementById('menu-toggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+        function showView(target) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+            if (target === 'dashboard') { document.getElementById('view-dashboard').classList.remove('hidden'); Dashboard.render(); }
+            else if (target === 'os') { document.getElementById('view-os').classList.remove('hidden'); OSManager.renderTable(); }
+            else if (target === 'financeiro') { document.getElementById('view-financeiro-premium').classList.remove('hidden'); FinanceiroManager.render(); }
+            else if (target === 'produtos') { document.getElementById('view-produtos-premium').classList.remove('hidden'); ProdutosManager.render(); }
+            else if (target === 'configuracoes') { document.getElementById('view-configuracoes').classList.remove('hidden'); ConfigManager.load(); }
+            else if (schemas[target]) { document.getElementById('view-crud').classList.remove('hidden'); CrudEngine.init(target); }
+            else { document.getElementById('view-dashboard').classList.remove('hidden'); Dashboard.render(); }
+        }
+
+        // LOGIN
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value, p = document.getElementById('login-pass').value;
+            if (db.users.some(user => user.user === u && user.pass === p) || (u==='admin' && p==='123' && db.users.length===0)) { 
+                document.getElementById('login-screen').classList.add('hidden'); document.getElementById('app-layout').classList.remove('hidden');
+                initDB(); showView('dashboard');
+            } else document.getElementById('login-error').style.display = 'block';
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => { location.reload(); });
+
+        // MOTOR CRUD
+        const schemas = {
+            clientes: { title: 'Clientes', icon: 'fa-users', array: 'clientes', fields: [{ name: 'nome', label: 'Nome*', type: 'text', req: true }, { name: 'cpf_cnpj', label: 'Documento', type: 'text' }, { name: 'telefone', label: 'Telefone*', type: 'text', req: true }], cols: ['Nome', 'Documento', 'Telefone'] },
+            produtos: { title: 'Produtos / Estoque', icon: 'fa-box-open', array: 'produtos', fields: [{ name: 'nome', label: 'Produto*', type: 'text', req: true }, { name: 'preco_custo', label: 'Custo (R$)', type: 'number' }, { name: 'preco_venda', label: 'Preço Venda (R$)*', type: 'number', req: true }, { name: 'estoque', label: 'Qtd Estoque', type: 'number' }], cols: ['Produto', 'Custo', 'Preço Venda', 'Estoque'] },
+            servicos: { title: 'Serviços', icon: 'fa-tools', array: 'servicos', fields: [{ name: 'nome', label: 'Serviço*', type: 'text', req: true }, { name: 'valor', label: 'Valor (R$)*', type: 'number', req: true }], cols: ['Serviço', 'Valor'] },
+            tecnicos: { title: 'Técnicos', icon: 'fa-user-cog', array: 'tecnicos', fields: [{ name: 'nome', label: 'Nome*', type: 'text', req: true }, { name: 'telefone', label: 'Telefone', type: 'text' }], cols: ['Nome', 'Telefone'] },
+            agenda: { title: 'Agenda', icon: 'fa-calendar-alt', array: 'agenda', fields: [{ name: 'data', label: 'Data*', type: 'date', req: true }, { name: 'cliente', label: 'Compromisso*', type: 'text', req: true }], cols: ['Data', 'Compromisso'] },
+            financeiro: { title: 'Financeiro', icon: 'fa-dollar-sign', array: 'financeiro', fields: [{ name: 'tipo', label: 'Tipo*', type: 'select', opts: ['Receita', 'Despesa', 'Sangria'], req: true }, { name: 'data', label: 'Data*', type: 'date', req: true }, { name: 'categoria', label: 'Categoria', type: 'select', opts: ['Empresa','Pessoal','Material','Mão de Obra','Produto','Serviço','Imposto','Outros'] }, { name: 'descricao', label: 'Descrição*', type: 'text', req: true }, { name: 'valor', label: 'Valor (R$)*', type: 'number', req: true }], cols: ['Tipo', 'Data', 'Categoria', 'Descrição', 'Valor'] },
+            fiscal: { title: 'Notas e Recibos', icon: 'fa-file-signature', array: 'fiscal', fields: [{ name: 'tipo', label: 'Tipo*', type: 'select', opts: ['Recibo', 'NFS-e'], req: true }, { name: 'cliente', label: 'Cliente*', type: 'text', req: true }, { name: 'valor', label: 'Valor*', type: 'number', req: true }], cols: ['Tipo', 'Cliente', 'Valor'] }
+        };
+
+        const CrudEngine = {
+            schema: null,
+            init: function(key) {
+                this.schema = schemas[key]; currentModule = key;
+                document.getElementById('crud-title').innerHTML = `<i class="fas ${this.schema.icon}"></i> ${this.schema.title}`;
+                let thead = '<tr>'; this.schema.cols.forEach(c => thead += `<th>${c}</th>`);
+                document.getElementById('crud-thead').innerHTML = thead + '<th style="width:100px;">Ações</th></tr>';
+                this.render(); document.getElementById('btn-add-crud').onclick = () => this.modal();
+            },
+            render: function(search = '') {
+                const tbody = document.getElementById('crud-tbody'); tbody.innerHTML = '';
+                const arr = db[this.schema.array];
+                if(arr.length === 0) return tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;">Vazio.</td></tr>`;
+                
+                arr.forEach((item, idx) => {
+                    if(search && !Object.values(item).some(v => String(v).toLowerCase().includes(search.toLowerCase()))) return;
+                    let tr = '<tr>';
+                    this.schema.fields.slice(0, this.schema.cols.length).forEach(f => {
+                        let val = item[f.name] || '-';
+                        if(f.type==='number') val = formatMoeda(val); if(f.type==='date') val = formatData(val);
+                        if(val === 'Receita') val = `<span style="color:var(--success)"><b>Receita</b></span>`;
+                        if(val === 'Despesa') val = `<span style="color:var(--danger)"><b>Despesa</b></span>`;
+                        tr += `<td>${val}</td>`;
+                    });
+                    tbody.innerHTML += tr + `<td><button class="btn btn-warning" onclick="CrudEngine.modal(${idx})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger" onclick="CrudEngine.del(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+                });
+            },
+            modal: function(idx = null) {
+                editId = idx;
+                document.getElementById('modal-crud-title').innerText = idx !== null ? 'Editar' : 'Novo Registro';
+                const form = document.getElementById('form-crud'); form.innerHTML = '';
+                const data = idx !== null ? db[this.schema.array][idx] : {};
+                
+                this.schema.fields.forEach(f => {
+                    const req = f.req ? 'required' : ''; const val = data[f.name] || '';
+                    if(f.type === 'select') form.innerHTML += `<div class="form-group"><label>${f.label}</label><select id="f_${f.name}" class="form-control" ${req}>${f.opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select></div>`;
+                    else form.innerHTML += `<div class="form-group"><label>${f.label}</label><input type="${f.type}" id="f_${f.name}" class="form-control" value="${val}" ${f.type==='number'?'step="0.01"':''} ${req}></div>`;
+                });
+                ModalManager.open('modal-crud'); document.getElementById('btn-save-crud').onclick = () => this.save();
+            },
+            save: function() {
+                const item = {}; let ok = true;
+                this.schema.fields.forEach(f => { const el = document.getElementById(`f_${f.name}`); if(el.required && !el.value) ok = false; item[f.name] = el.value; });
+                if(!ok) return alert('Preencha os campos obrigatórios (*)');
+                if(editId !== null) db[this.schema.array][editId] = item; else db[this.schema.array].push(item);
+                saveData(); this.render(); ModalManager.close('modal-crud');
+                if(currentModule === 'produtos' && !document.getElementById('view-produtos-premium').classList.contains('hidden')) ProdutosManager.render();
+                if(currentModule === 'financeiro' && !document.getElementById('view-financeiro-premium').classList.contains('hidden')) FinanceiroManager.render();
+                Dashboard.render(); if(currentModule === 'produtos') ProdutosManager.render();
+            },
+            del: function(idx) { if(confirm('Apagar registro?')) { db[this.schema.array].splice(idx, 1); saveData(); this.render(); if(currentModule === 'produtos') ProdutosManager.render(); } }
+        };
+        document.getElementById('crud-search').addEventListener('input', e => CrudEngine.render(e.target.value));
+
+        // ORDEM DE SERVIÇO & ASSINATURAS
+        const OSManager = {
+            initPad: function(id) {
+                const cvs = document.getElementById(id);
+                // Ajuste responsivo do Canvas
+                cvs.width = cvs.parentElement.clientWidth - 20; 
+                cvs.height = 150;
+                const ctx = cvs.getContext('2d'); ctx.lineWidth = 2; ctx.strokeStyle = '#000';
+                let draw = false;
+                const pos = e => { const r = cvs.getBoundingClientRect(); return { x: (e.touches?e.touches[0].clientX:e.clientX)-r.left, y: (e.touches?e.touches[0].clientY:e.clientY)-r.top }; };
+                const down = e => { draw=true; ctx.beginPath(); ctx.moveTo(pos(e).x, pos(e).y); e.preventDefault(); };
+                const move = e => { if(!draw)return; ctx.lineTo(pos(e).x, pos(e).y); ctx.stroke(); e.preventDefault(); };
+                const up = () => draw=false;
+                cvs.onmousedown = down; cvs.onmousemove = move; window.onmouseup = up;
+                cvs.ontouchstart = down; cvs.ontouchmove = move; cvs.ontouchend = up;
+            },
+            clearPad: function(id) { const c = document.getElementById(id); c.getContext('2d').clearRect(0,0,c.width,c.height); },
+            renderTable: function() {
+                const tbody = document.getElementById('os-tbody'); tbody.innerHTML = '';
+                [...(db.os || [])].reverse().forEach(os => {
+                    const idx = db.os.findIndex(o => o.id === os.id);
+                    tbody.innerHTML += `<tr><td>#${this.escapeHtml(os.id)}</td><td>${formatData(os.data)}</td><td>${this.escapeHtml(os.cli || '-')}</td><td>${this.escapeHtml(os.tec||'-')}</td><td><b>${this.escapeHtml(os.status || '-')}</b></td><td>${formatMoeda(os.valor)}</td>
+                    <td><button class="btn btn-warning" onclick="OSManager.openModal(${idx})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger" onclick="OSManager.del(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+                });
+                if(!(db.os || []).length) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Nenhuma O.S cadastrada.</td></tr>';
+            },
+            escapeHtml: function(v) { return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); },
+            openModal: function(idx = null) {
+                editId = idx; document.getElementById('modal-os-title').innerText = idx !== null ? `Editar O.S #${db.os[idx].id}` : 'Nova O.S';
+                document.getElementById('os-cliente').innerHTML = '<option value="">Selecione...</option>' + (db.clientes || []).map(c=>`<option value="${this.escapeHtml(c.nome)}">${this.escapeHtml(c.nome)}</option>`).join('');
+                document.getElementById('os-tecnico').innerHTML = '<option value="">Nenhum</option>' + (db.tecnicos || []).map(t=>`<option value="${this.escapeHtml(t.nome)}">${this.escapeHtml(t.nome)}</option>`).join('');
+                ModalManager.open('modal-os');
+                
+                setTimeout(() => {
+                    this.initPad('canvas-cliente'); this.initPad('canvas-tecnico');
+                    if(idx !== null) {
+                        const o = db.os[idx];
+                        document.getElementById('os-cliente').value = o.cli || o.cliente || '';
+                        document.getElementById('os-tecnico').value = o.tec || o.tecnico || '';
+                        ['data','status','descricao','produto','servico','valor','pagamento'].forEach(k => document.getElementById(`os-${k}`).value = o[k]||'');
+                        if(o.assC) { const i=new Image(); i.onload=()=>document.getElementById('canvas-cliente').getContext('2d').drawImage(i,0,0); i.src=o.assC; }
+                        if(o.assT) { const i=new Image(); i.onload=()=>document.getElementById('canvas-tecnico').getContext('2d').drawImage(i,0,0); i.src=o.assT; }
+                        document.getElementById('btn-print-os').style.display='inline-block';
+                    } else { document.getElementById('form-os').reset(); document.getElementById('os-data').value = new Date().toISOString().split('T')[0]; document.getElementById('btn-print-os').style.display='none'; }
+                }, 200);
+            },
+            save: function() {
+                const v = document.getElementById('os-valor').value, c = document.getElementById('os-cliente').value;
+                if(!c || !v) return alert('Cliente e Valor são obrigatórios!');
+                const getImg = id => { const cvs = document.getElementById(id); const tmp = document.createElement('canvas'); tmp.width=cvs.width; tmp.height=cvs.height; const ctx=tmp.getContext('2d'); ctx.fillStyle="#fff"; ctx.fillRect(0,0,tmp.width,tmp.height); ctx.drawImage(cvs,0,0); return tmp.toDataURL('image/jpeg', 0.5); };
+                const isNew = editId === null; const id = isNew ? (db.config.proxima_os || 1000) : db.os[editId].id;
+                const os = { id, cli: c, tec: document.getElementById('os-tecnico').value, data: document.getElementById('os-data').value, status: document.getElementById('os-status').value, descricao: document.getElementById('os-descricao').value, produto: document.getElementById('os-produto').value, servico: document.getElementById('os-servico').value, valor: v, pagamento: document.getElementById('os-pagamento').value, assC: getImg('canvas-cliente'), assT: getImg('canvas-tecnico') };
+                if(isNew) {
+                    db.os.push(os); db.config.proxima_os = id + 1;
+                } else {
+                    db.os[editId] = os;
+                }
+                const descOS = `OS #${id}`;
+                const finIdx = db.financeiro.findIndex(f => (String(f.origem_os) === String(id)) || (f.descricao === descOS && f.categoria === 'Serviço'));
+                if(os.status === 'Concluída') {
+                    const lanc = {tipo:'Receita', data:os.data, categoria:'Serviço', pagamento:os.pagamento, cliente:c, tecnico:os.tec, descricao:descOS, valor:Number(v)||0, origem_os:id};
+                    if(finIdx >= 0) db.financeiro[finIdx] = lanc; else db.financeiro.push(lanc);
+                } else if(finIdx >= 0) {
+                    db.financeiro.splice(finIdx, 1);
+                }
+                saveData(); this.renderTable(); ModalManager.close('modal-os'); Dashboard.render();
+            },
+            del: function(idx) { if(confirm('Apagar OS?')) { const removida = db.os[idx]; db.os.splice(idx,1); if(removida) db.financeiro = (db.financeiro || []).filter(f => !(String(f.origem_os) === String(removida.id) || (f.descricao === `OS #${removida.id}` && f.categoria === 'Serviço'))); saveData(); this.renderTable(); Dashboard.render(); } },
+            generatePDF: function() {
+                const os = db.os[editId];
+                document.getElementById('print-empresa-nome').innerText = db.config.nome; document.getElementById('print-empresa-dados').innerText = `CNPJ: ${db.config.cnpj}\n${db.config.endereco}`;
+                const l = document.getElementById('print-logo'); if(db.config.logo) { l.src=db.config.logo; l.style.display='block'; } else l.style.display='none';
+                document.getElementById('print-os-num').innerText = os.id; document.getElementById('print-cliente').innerText = os.cli; document.getElementById('print-data').innerText = formatData(os.data);
+                document.getElementById('print-tecnico').innerText = os.tec; document.getElementById('print-status').innerText = os.status; document.getElementById('print-descricao').innerText = os.descricao;
+                document.getElementById('print-produtos').innerText = os.produto; document.getElementById('print-servicos').innerText = os.servico; document.getElementById('print-valor').innerText = (Number(os.valor)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); document.getElementById('print-pagto').innerText = os.pagamento;
+                if(os.assC) document.getElementById('print-ass-cliente').src=os.assC; if(os.assT) document.getElementById('print-ass-tecnico').src=os.assT;
+                const p = document.getElementById('print-area'); p.style.left='0';
+                html2canvas(p, {scale:2}).then(cvs => {
+                    p.style.left='-9999px'; const pdf = new window.jspdf.jsPDF('p','mm','a4');
+                    pdf.addImage(cvs.toDataURL('image/jpeg',0.8), 'JPEG', 0, 0, pdf.internal.pageSize.getWidth(), (cvs.height*pdf.internal.pageSize.getWidth())/cvs.width);
+                    pdf.save(`OS_${os.id}.pdf`);
+                });
+            }
+        };
+
+
+
+        // FINANCEIRO COMPLETO, SANGRIA, FECHAMENTOS E RELATÓRIOS
+        const FinanceiroManager = {
+            toNumber: function(valor) {
+                if (typeof valor === 'number') return valor;
+                if (!valor) return 0;
+                return Number(String(valor).replace(',', '.')) || 0;
+            },
+            resumo: function(filtro) {
+                let receitas=0, despesas=0, sangrias=0;
+                (db.financeiro || []).filter(filtro || (()=>true)).forEach(f => {
+                    const v = this.toNumber(f.valor);
+                    if(f.tipo === 'Receita') receitas += v;
+                    else if(f.tipo === 'Sangria') sangrias += v;
+                    else despesas += v;
+                });
+                return { receitas, despesas, sangrias, saldo: receitas - despesas - sangrias };
+            },
+            resumoNubank: function(filtro) {
+                let entradas=0, saidas=0;
+                (db.nubank || []).filter(filtro || (()=>true)).forEach(m => {
+                    const v = this.toNumber(m.valor);
+                    if(v >= 0) entradas += v; else saidas += Math.abs(v);
+                });
+                return { entradas, saidas, saldo: entradas - saidas };
+            },
+            periodoAtual: function(tipo='mensal') {
+                const hoje = new Date().toISOString().split('T')[0];
+                if(tipo === 'diario') return [hoje, hoje, 'Diário'];
+                if(tipo === 'semanal') { const r = this.semanaRange(hoje); return [r[0], r[1], 'Semanal']; }
+                const mes = hoje.slice(0,7); return [`${mes}-01`, `${mes}-31`, 'Mensal'];
+            },
+            filtrarPeriodo: function(arr, ini, fim) {
+                return (arr || []).filter(i => (i.data || '') >= ini && (i.data || '') <= fim);
+            },
+            resumoConciliado: function(ini, fim) {
+                const sis = this.resumo(f => (f.data || '') >= ini && (f.data || '') <= fim);
+                const nub = this.resumoNubank(m => (m.data || '') >= ini && (m.data || '') <= fim);
+                return { sistema: sis, nubank: nub, saldoConciliado: sis.saldo + nub.saldo };
+            },
+            render: function() {
+                const hoje = new Date().toISOString().split('T')[0];
+                const mes = hoje.slice(0,7);
+                document.getElementById('fin-fecha-dia').value ||= hoje;
+                document.getElementById('fin-fecha-mes').value ||= mes;
+                const relIni = document.getElementById('fin-rel-ini'); if(relIni) relIni.value ||= hoje;
+                const relFim = document.getElementById('fin-rel-fim'); if(relFim) relFim.value ||= hoje;
+                const relMes = document.getElementById('fin-rel-mes'); if(relMes) relMes.value ||= mes;
+                const msgCob = document.getElementById('fin-msg-cobranca'); if(msgCob) msgCob.value = db.config.msg_cobranca || msgCob.value;
+                document.getElementById('fin-semana-data').value ||= hoje;
+                const mesTec = document.getElementById('fin-tecnico-mes');
+                if(mesTec) mesTec.value ||= mes;
+                const comissao = document.getElementById('fin-comissao-tecnico');
+                if(comissao) comissao.value = db.config.comissao_tecnico || 0;
+                const tecSemanaEl = document.getElementById('fin-tecnico-semana');
+                const tecSelecionado = tecSemanaEl ? tecSemanaEl.value : '';
+                if(tecSemanaEl) { tecSemanaEl.innerHTML = '<option value="">Todos</option>' + (db.tecnicos || []).map(t=>`<option value="${this.escapeHtml(t.nome)}">${this.escapeHtml(t.nome)}</option>`).join(''); tecSemanaEl.value = tecSelecionado; }
+                this.atualizarResumoNubank();
+                const r = this.resumo(f => (f.data || '').startsWith(mes));
+                document.getElementById('fin-receitas').innerText = formatMoeda(r.receitas);
+                document.getElementById('fin-despesas').innerText = formatMoeda(r.despesas);
+                document.getElementById('fin-sangrias').innerText = formatMoeda(r.sangrias);
+                document.getElementById('fin-saldo').innerText = formatMoeda(r.saldo);
+                const pessoal = this.resumo(f => (f.categoria || '').toLowerCase() === 'pessoal' && (f.data || '').startsWith(mes));
+                document.getElementById('fin-pessoal-result').innerHTML = this.cardResultado('Resumo pessoal do mês', [
+                    ['Receitas', formatMoeda(pessoal.receitas)], ['Despesas', formatMoeda(pessoal.despesas)], ['Sangrias', formatMoeda(pessoal.sangrias)], ['Saldo pessoal', formatMoeda(pessoal.saldo)]
+                ]);
+                const tbody = document.getElementById('fin-tbody'); tbody.innerHTML = '';
+                [...(db.financeiro || [])].reverse().forEach((f, revIdx) => {
+                    const idx = db.financeiro.length - 1 - revIdx;
+                    let cor = f.tipo === 'Receita' ? 'var(--success)' : (f.tipo === 'Sangria' ? 'var(--warning)' : 'var(--danger)');
+                    const clienteNome = f.cliente || '-';
+                    tbody.innerHTML += `<tr><td style="color:${cor};"><b>${this.escapeHtml(f.tipo)}</b></td><td>${formatData(f.data)}</td><td>${this.escapeHtml(f.categoria||'Empresa')}</td><td>${this.escapeHtml(clienteNome)}</td><td>${this.escapeHtml(f.descricao||'-')}</td><td>${this.escapeHtml(f.pagamento||'-')}</td><td>${formatMoeda(f.valor)}</td><td><button class="btn btn-success" onclick="FinanceiroManager.cobrarWhatsApp(${idx})"><i class="fab fa-whatsapp"></i> Cobrar</button></td><td><button class="btn btn-warning" onclick="FinanceiroManager.openModal(${idx})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger" onclick="FinanceiroManager.del(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+                });
+                if(!db.financeiro.length) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Nenhum lançamento financeiro.</td></tr>';
+            },
+            escapeHtml: function(v) {
+                return String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            },
+            cardResultado: function(titulo, linhas) {
+                return `<div style="margin-top:12px; border:1px solid #e6eef7; border-radius:10px; overflow:hidden; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.04);"><div style="background:linear-gradient(90deg,var(--primary),#1e88e5); color:#fff; padding:10px 12px; font-weight:700;">${titulo}</div><div style="padding:12px;">${linhas.map(([a,b],i)=>`<div style="display:flex; justify-content:space-between; gap:15px; padding:7px 0; border-bottom:${i===linhas.length-1?'0':'1px solid #edf2f7'};"><span>${a}</span><b>${b}</b></div>`).join('')}</div></div>`;
+            },
+            openModal: function(idx=null) {
+                editId = idx;
+                document.getElementById('modal-fin-title').innerText = idx !== null ? 'Editar Lançamento' : 'Novo Lançamento Financeiro';
+                const f = idx !== null ? db.financeiro[idx] : { tipo:'Receita', data:new Date().toISOString().split('T')[0], categoria:'Empresa', pagamento:'PIX', cliente:'' };
+                const selCli = document.getElementById('fin-cliente');
+                if(selCli) selCli.innerHTML = '<option value="">Nenhum</option>' + (db.clientes || []).map(c => `<option value="${this.escapeHtml(c.nome)}">${this.escapeHtml(c.nome)}</option>`).join('');
+                document.getElementById('fin-tipo').value = f.tipo || 'Receita';
+                document.getElementById('fin-data').value = f.data || new Date().toISOString().split('T')[0];
+                document.getElementById('fin-categoria').value = f.categoria || 'Empresa';
+                document.getElementById('fin-pagamento').value = f.pagamento || 'PIX';
+                if(document.getElementById('fin-cliente')) document.getElementById('fin-cliente').value = f.cliente || '';
+                document.getElementById('fin-descricao').value = f.descricao || '';
+                document.getElementById('fin-valor').value = f.valor || '';
+                ModalManager.open('modal-financeiro');
+            },
+            save: function() {
+                const item = { tipo: document.getElementById('fin-tipo').value, data: document.getElementById('fin-data').value, categoria: document.getElementById('fin-categoria').value, pagamento: document.getElementById('fin-pagamento').value, cliente: (document.getElementById('fin-cliente') ? document.getElementById('fin-cliente').value : ''), descricao: document.getElementById('fin-descricao').value.trim(), valor: this.toNumber(document.getElementById('fin-valor').value) };
+                if(!item.data || !item.descricao || item.valor <= 0) return alert('Preencha data, descrição e valor maior que zero.');
+                if(editId !== null) db.financeiro[editId] = item; else db.financeiro.push(item);
+                saveData(); ModalManager.close('modal-financeiro'); this.render(); Dashboard.render();
+            },
+            del: function(idx) { if(confirm('Apagar lançamento?')) { db.financeiro.splice(idx,1); saveData(); this.render(); Dashboard.render(); } },
+            registrarSangria: function() { this.openModal(); document.getElementById('fin-tipo').value='Sangria'; document.getElementById('fin-categoria').value='Empresa'; document.getElementById('fin-descricao').value='Sangria de caixa'; document.getElementById('fin-pagamento').value='Dinheiro'; },
+            fechamentoDiario: function() {
+                const dia = document.getElementById('fin-fecha-dia').value;
+                if(!dia) return alert('Informe a data do fechamento.');
+                const r = this.resumo(f => f.data === dia);
+                document.getElementById('fin-fechamento-dia-result').innerHTML = this.cardResultado(`Fechamento de ${formatData(dia)}`, [
+                    ['Receitas', formatMoeda(r.receitas)], ['Despesas', formatMoeda(r.despesas)], ['Sangrias', formatMoeda(r.sangrias)], ['Saldo final', formatMoeda(r.saldo)]
+                ]);
+            },
+            fechamentoMensal: function() {
+                const mes = document.getElementById('fin-fecha-mes').value;
+                if(!mes) return alert('Informe o mês do fechamento.');
+                const r = this.resumo(f => (f.data || '').startsWith(mes));
+                document.getElementById('fin-fechamento-mes-result').innerHTML = this.cardResultado(`Fechamento do mês ${mes}`, [
+                    ['Receitas', formatMoeda(r.receitas)], ['Despesas', formatMoeda(r.despesas)], ['Sangrias', formatMoeda(r.sangrias)], ['Resultado mensal', formatMoeda(r.saldo)]
+                ]);
+            },
+            semanaRange: function(data) {
+                if(!data) data = new Date().toISOString().split('T')[0];
+                const d = new Date(data+'T00:00:00'); const day = d.getDay(); const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                const ini = new Date(d.setDate(diff)); const fim = new Date(ini); fim.setDate(ini.getDate()+6);
+                return [ini.toISOString().slice(0,10), fim.toISOString().slice(0,10)];
+            },
+            getComissaoPercentual: function() {
+                const el = document.getElementById('fin-comissao-tecnico');
+                let pct = this.toNumber(el ? el.value : db.config.comissao_tecnico);
+                pct = Math.min(Math.max(pct, 0), 100);
+                db.config.comissao_tecnico = pct;
+                saveData();
+                return pct;
+            },
+            filtrarOSTecnico: function(tec, ini, fim) {
+                return (db.os || []).filter(o => (o.data || '') >= ini && (o.data || '') <= fim && (!tec || o.tec === tec) && o.status === 'Concluída');
+            },
+            calcularComissao: function(osList, pct) {
+                const total = osList.reduce((s,o)=>s+(this.toNumber(o.valor)),0);
+                const receber = total * (pct / 100);
+                return { qtd: osList.length, total, receber, empresa: total - receber };
+            },
+            balancoTecnicoSemana: function() {
+                const tec = document.getElementById('fin-tecnico-semana').value; const data = document.getElementById('fin-semana-data').value;
+                const [ini,fim] = this.semanaRange(data); const pct = this.getComissaoPercentual();
+                const calc = this.calcularComissao(this.filtrarOSTecnico(tec, ini, fim), pct);
+                document.getElementById('fin-tecnico-result').innerHTML = this.cardResultado(`Balanço semanal: ${formatData(ini)} até ${formatData(fim)}`, [
+                    ['Técnico', tec || 'Todos'], ['O.S concluídas', calc.qtd], ['Total produzido', formatMoeda(calc.total)], [`Comissão do técnico (${pct}%)`, formatMoeda(calc.receber)], ['Saldo da empresa', formatMoeda(calc.empresa)]
+                ]);
+            },
+            balancoTecnicoMes: function() {
+                const tec = document.getElementById('fin-tecnico-semana').value; const mes = document.getElementById('fin-tecnico-mes').value || new Date().toISOString().slice(0,7);
+                const pct = this.getComissaoPercentual(); const ini = `${mes}-01`; const fim = `${mes}-31`;
+                const calc = this.calcularComissao(this.filtrarOSTecnico(tec, ini, fim), pct);
+                document.getElementById('fin-tecnico-result').innerHTML = this.cardResultado(`Balanço mensal: ${mes}`, [
+                    ['Técnico', tec || 'Todos'], ['O.S concluídas', calc.qtd], ['Total produzido', formatMoeda(calc.total)], [`Comissão do técnico (${pct}%)`, formatMoeda(calc.receber)], ['Saldo da empresa', formatMoeda(calc.empresa)]
+                ]);
+            },
+            salvarMensagemCobranca: function() {
+                const el = document.getElementById('fin-msg-cobranca');
+                if(el) { db.config.msg_cobranca = el.value; saveData(); }
+            },
+            normalizarTelefone: function(tel) {
+                let n = String(tel || '').replace(/\D/g, '');
+                if(!n) return '';
+                if(n.length === 10 || n.length === 11) n = '55' + n;
+                return n;
+            },
+            cobrarWhatsApp: function(idx) {
+                const f = db.financeiro[idx];
+                if(!f) return alert('Lançamento não encontrado.');
+                let cliente = (db.clientes || []).find(c => c.nome === f.cliente);
+                let nome = f.cliente || (cliente && cliente.nome) || prompt('Informe o nome do cliente para cobrança:', '') || '';
+                let tel = (cliente && cliente.telefone) || prompt('Informe o WhatsApp do cliente com DDD:', '') || '';
+                tel = this.normalizarTelefone(tel);
+                if(!tel) return alert('Telefone/WhatsApp inválido. Cadastre o telefone do cliente ou informe manualmente.');
+                const modelo = db.config.msg_cobranca || 'Olá, {cliente}! Tudo bem? Aqui é da {empresa}. Identificamos uma cobrança referente a {descricao}, no valor de {valor}, com vencimento/data em {data}. Poderia verificar e nos retornar, por gentileza?';
+                const msg = modelo
+                    .replaceAll('{cliente}', nome || 'cliente')
+                    .replaceAll('{empresa}', db.config.nome || 'nossa empresa')
+                    .replaceAll('{descricao}', f.descricao || 'serviço/produto')
+                    .replaceAll('{valor}', formatMoeda(f.valor))
+                    .replaceAll('{data}', formatData(f.data));
+                window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+            },
+            parseValorExtrato: function(v) {
+                if(v === undefined || v === null) return 0;
+                let s = String(v).trim().replace(/R\$/gi,'').replace(/"/g,'').replace(/\s/g,'');
+                if(!s) return 0;
+                if(s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',', '.');
+                else if(s.includes(',')) s = s.replace(',', '.');
+                return Number(s) || 0;
+            },
+            parseDataExtrato: function(v) {
+                const s = String(v || '').trim().replace(/"/g,'');
+                if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+                const br = s.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+                if(br) return `${br[3]}-${br[2]}-${br[1]}`;
+                const ofx = s.match(/(\d{4})(\d{2})(\d{2})/);
+                if(ofx) return `${ofx[1]}-${ofx[2]}-${ofx[3]}`;
+                return '';
+            },
+            parseCSVNubank: function(conteudo) {
+                const linhas = conteudo.split(/\r?\n/).filter(l => l.trim());
+                if(!linhas.length) return [];
+                const sep = linhas[0].includes(';') ? ';' : ',';
+                const header = linhas[0].split(sep).map(h => h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/"/g,'').trim());
+                const idxData = header.findIndex(h => ['date','data','posted date'].some(k => h.includes(k)));
+                const idxDesc = header.findIndex(h => ['title','descricao','description','memo','historico'].some(k => h.includes(k)));
+                const idxValor = header.findIndex(h => ['amount','valor','value'].some(k => h.includes(k)));
+                const out = [];
+                for(let i=1;i<linhas.length;i++) {
+                    const cols = this.parseCSVLine(linhas[i], sep).map(c => c.replace(/^"|"$/g,'').trim());
+                    const data = this.parseDataExtrato(cols[idxData] || cols[0]);
+                    const descricao = cols[idxDesc] || cols[1] || 'Movimentação Nubank';
+                    const valor = this.parseValorExtrato(cols[idxValor >= 0 ? idxValor : cols.length-1]);
+                    if(data && valor) out.push({ data, descricao, valor, origem:'Nubank Empresas' });
+                }
+                return out;
+            },
+            parseOFXNubank: function(conteudo) {
+                const movs = [];
+                const blocks = conteudo.match(/<STMTTRN>[\s\S]*?(?=<STMTTRN>|<\/BANKTRANLIST>|$)/gi) || [];
+                blocks.forEach(b => {
+                    const get = tag => { const m = b.match(new RegExp('<'+tag+'>([^<\\r\\n]+)', 'i')); return m ? m[1].trim() : ''; };
+                    const data = this.parseDataExtrato(get('DTPOSTED'));
+                    const valor = this.parseValorExtrato(get('TRNAMT'));
+                    const descricao = get('MEMO') || get('NAME') || 'Movimentação Nubank';
+                    if(data && valor) movs.push({ data, descricao, valor, origem:'Nubank Empresas' });
+                });
+                return movs;
+            },
+            importarExtratoNubank: function() {
+                const input = document.getElementById('nubank-file');
+                const file = input && input.files ? input.files[0] : null;
+                if(!file) return alert('Selecione um extrato CSV ou OFX do Nubank Empresas.');
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const conteudo = e.target.result || '';
+                    let movs = file.name.toLowerCase().endsWith('.ofx') ? this.parseOFXNubank(conteudo) : this.parseCSVNubank(conteudo);
+                    if(!movs.length) return alert('Não consegui identificar movimentações no extrato. Verifique se o arquivo possui data, descrição e valor.');
+                    db.nubank = db.nubank || [];
+                    const chave = m => `${m.data}|${m.descricao}|${m.valor}`;
+                    const existentes = new Set(db.nubank.map(chave));
+                    movs = movs.filter(m => !existentes.has(chave(m)));
+                    db.nubank.push(...movs);
+                    saveData(); this.atualizarResumoNubank();
+                    alert(`${movs.length} movimentação(ões) importada(s) do Nubank Empresas.`);
+                };
+                reader.readAsText(file, 'UTF-8');
+            },
+            limparExtratoNubank: function() {
+                if(confirm('Limpar todas as movimentações importadas do Nubank?')) { db.nubank = []; saveData(); this.atualizarResumoNubank(); }
+            },
+            atualizarResumoNubank: function() {
+                const mes = (document.getElementById('fin-fecha-mes') && document.getElementById('fin-fecha-mes').value) || new Date().toISOString().slice(0,7);
+                const ini = `${mes}-01`, fim = `${mes}-31`;
+                const c = this.resumoConciliado(ini, fim);
+                const nubankEl = document.getElementById('nubank-result');
+                if(nubankEl) nubankEl.innerHTML = this.cardResultado(`Extrato Nubank importado (${mes})`, [
+                    ['Movimentações salvas', (db.nubank || []).length], ['Entradas Nubank', formatMoeda(c.nubank.entradas)], ['Saídas Nubank', formatMoeda(c.nubank.saidas)], ['Saldo Nubank', formatMoeda(c.nubank.saldo)]
+                ]);
+                const caixaEl = document.getElementById('fin-caixa-conciliado');
+                if(caixaEl) caixaEl.innerHTML = this.cardResultado(`Caixa conciliado do mês ${mes}`, [
+                    ['Saldo do sistema', formatMoeda(c.sistema.saldo)], ['Saldo Nubank importado', formatMoeda(c.nubank.saldo)], ['Saldo combinado', formatMoeda(c.saldoConciliado)]
+                ]);
+            },
+            definirPeriodoRelatorio: function() {
+                const tipo = document.getElementById('fin-rel-tipo')?.value || 'mensal';
+                const iniEl = document.getElementById('fin-rel-ini');
+                const fimEl = document.getElementById('fin-rel-fim');
+                const mesEl = document.getElementById('fin-rel-mes');
+                if(tipo === 'mensal') {
+                    const mes = mesEl?.value || document.getElementById('fin-fecha-mes')?.value || new Date().toISOString().slice(0,7);
+                    return [`${mes}-01`, `${mes}-31`, `Mensal ${mes}`];
+                }
+                if(tipo === 'semanal') {
+                    const base = iniEl?.value || new Date().toISOString().slice(0,10);
+                    const [ini, fim] = this.semanaRange(base);
+                    return [ini, fim, `Semanal ${formatData(ini)} a ${formatData(fim)}`];
+                }
+                const ini = iniEl?.value;
+                const fim = fimEl?.value;
+                if(!ini || !fim) throw new Error('Informe a data inicial e final.');
+                if(ini > fim) throw new Error('A data inicial não pode ser maior que a data final.');
+                return [ini, fim, `Período ${formatData(ini)} a ${formatData(fim)}`];
+            },
+            gerarRelatorioPeriodoPDF: function() {
+                let ini, fim, tituloPeriodo;
+                try { [ini, fim, tituloPeriodo] = this.definirPeriodoRelatorio(); } catch(e) { return alert(e.message); }
+                const itens = this.filtrarPeriodo(db.financeiro || [], ini, fim);
+                const movs = this.filtrarPeriodo(db.nubank || [], ini, fim);
+                const r = this.resumo(f => (f.data || '') >= ini && (f.data || '') <= fim);
+                const rn = this.resumoNubank(m => (m.data || '') >= ini && (m.data || '') <= fim);
+                const pdf = new window.jspdf.jsPDF('p','mm','a4'); let y=36;
+                this.drawPdfHeader(pdf, 'Relatório Financeiro Completo', `${db.config.nome || 'FinControl'} • ${tituloPeriodo}`);
+                y = this.drawResumoCards(pdf, [
+                    {label:'Receitas Sistema', value:formatMoeda(r.receitas), rgb:[40,167,69]},
+                    {label:'Despesas/Sangrias', value:formatMoeda(r.despesas + r.sangrias), rgb:[220,53,69]},
+                    {label:'Saldo Nubank', value:formatMoeda(rn.saldo), rgb:[120,75,180]},
+                    {label:'Saldo Combinado', value:formatMoeda(r.saldo + rn.saldo), rgb:[0,86,179]}
+                ], y);
+                pdf.setFontSize(12); pdf.text('Gráfico comparativo', 14, y); y += 4;
+                this.drawBarChart(pdf, ['Receitas','Saídas','Nubank','Combinado'], [r.receitas, r.despesas + r.sangrias, Math.abs(rn.saldo), Math.abs(r.saldo + rn.saldo)], 14, y, 182, 48); y += 58;
+                pdf.setFontSize(12); pdf.text('Lançamentos do Sistema', 14, y); y += 7;
+                pdf.setFillColor(244,246,249); pdf.rect(14, y-5, 182, 8, 'F'); pdf.setFontSize(8);
+                pdf.text('Data', 16, y); pdf.text('Tipo', 37, y); pdf.text('Cliente', 58, y); pdf.text('Descrição', 92, y); pdf.text('Valor', 176, y); y += 6;
+                itens.forEach(f => { if(y>278){ pdf.addPage(); y=18; } pdf.setFontSize(8); pdf.text(formatData(f.data),16,y); pdf.text(String(f.tipo||'-').slice(0,10),37,y); pdf.text(String(f.cliente||'-').slice(0,18),58,y); pdf.text(String(f.descricao||'-').slice(0,48),92,y); pdf.text(formatMoeda(f.valor),170,y); y += 5; });
+                if(y > 235) { pdf.addPage(); y = 18; }
+                y += 6; pdf.setFontSize(12); pdf.text('Movimentações Nubank Importadas', 14, y); y += 7;
+                pdf.setFillColor(244,246,249); pdf.rect(14, y-5, 182, 8, 'F'); pdf.setFontSize(8);
+                pdf.text('Data', 16, y); pdf.text('Descrição', 45, y); pdf.text('Valor', 176, y); y += 6;
+                movs.forEach(m => { if(y>278){ pdf.addPage(); y=18; } pdf.setFontSize(8); pdf.text(formatData(m.data),16,y); pdf.text(String(m.descricao||'-').slice(0,75),45,y); pdf.text(formatMoeda(m.valor),170,y); y += 5; });
+                pdf.save(`Relatorio_Financeiro_${ini}_a_${fim}.pdf`);
+            },
+            drawPdfHeader: function(pdf, titulo, subtitulo) {
+                pdf.setFillColor(0, 86, 179); pdf.rect(0, 0, 210, 28, 'F');
+                pdf.setTextColor(255,255,255); pdf.setFontSize(18); pdf.text(titulo, 14, 13);
+                pdf.setFontSize(10); pdf.text(subtitulo, 14, 21);
+                pdf.setTextColor(30,30,30);
+            },
+            drawResumoCards: function(pdf, cards, y) {
+                const w = 43, h = 22;
+                cards.forEach((c,i)=>{
+                    const x = 14 + i * 47;
+                    pdf.setFillColor(c.rgb[0], c.rgb[1], c.rgb[2]); pdf.roundedRect(x, y, w, h, 2, 2, 'F');
+                    pdf.setTextColor(255,255,255); pdf.setFontSize(8); pdf.text(c.label, x+3, y+7);
+                    pdf.setFontSize(11); pdf.text(c.value, x+3, y+16);
+                });
+                pdf.setTextColor(30,30,30);
+                return y + h + 10;
+            },
+            drawBarChart: function(pdf, labels, values, x, y, w, h) {
+                const max = Math.max(...values, 1); const barW = w / values.length - 8;
+                pdf.setDrawColor(220); pdf.rect(x, y, w, h);
+                values.forEach((v,i)=>{
+                    const bh = (v / max) * (h - 18); const bx = x + 8 + i * (barW + 8); const by = y + h - 10 - bh;
+                    pdf.setFillColor(i===0?40: i===1?220:255, i===0?167:i===1?53:193, i===0?69:i===1?69:7);
+                    pdf.rect(bx, by, barW, bh, 'F');
+                    pdf.setFontSize(7); pdf.setTextColor(60); pdf.text(labels[i], bx, y+h-4);
+                    pdf.text(formatMoeda(v).replace('R$','').trim(), bx, by-2);
+                });
+                pdf.setTextColor(30,30,30);
+            },
+            gerarRelatorioPDF: function() {
+                const mes = document.getElementById('fin-fecha-mes').value || new Date().toISOString().slice(0,7);
+                const itens = (db.financeiro || []).filter(f => (f.data || '').startsWith(mes)); const r = this.resumo(f => (f.data || '').startsWith(mes));
+                const pdf = new window.jspdf.jsPDF('p','mm','a4'); let y=36;
+                this.drawPdfHeader(pdf, `Relatório Financeiro Mensal`, `${db.config.nome || 'FinControl'} • Competência ${mes}`);
+                y = this.drawResumoCards(pdf, [
+                    {label:'Receitas', value:formatMoeda(r.receitas), rgb:[40,167,69]},
+                    {label:'Despesas', value:formatMoeda(r.despesas), rgb:[220,53,69]},
+                    {label:'Sangrias', value:formatMoeda(r.sangrias), rgb:[255,193,7]},
+                    {label:'Saldo', value:formatMoeda(r.saldo), rgb:[0,86,179]}
+                ], y);
+                pdf.setFontSize(12); pdf.text('Gráfico resumo do mês', 14, y); y += 4;
+                this.drawBarChart(pdf, ['Receitas','Despesas','Sangrias'], [r.receitas,r.despesas,r.sangrias], 14, y, 182, 48); y += 58;
+                pdf.setFillColor(244,246,249); pdf.rect(14, y-6, 182, 8, 'F');
+                pdf.setFontSize(9); pdf.text('Data', 16, y); pdf.text('Tipo', 38, y); pdf.text('Categoria', 62, y); pdf.text('Forma', 92, y); pdf.text('Descrição', 118, y); pdf.text('Valor', 178, y); y+=6;
+                itens.forEach(f => { if(y>280){ pdf.addPage(); y=18; } pdf.setFontSize(8); pdf.text(formatData(f.data), 16, y); pdf.text(String(f.tipo||'-').slice(0,12), 38, y); pdf.text(String(f.categoria||'Empresa').slice(0,16), 62, y); pdf.text(String(f.pagamento||'-').slice(0,14), 92, y); pdf.text(String(f.descricao||'-').slice(0,34), 118, y); pdf.text(formatMoeda(f.valor), 172, y); y+=5; });
+                pdf.save(`Relatorio_Financeiro_${mes}.pdf`);
+            }
+        };
+
+        const ProdutosManager = {
+            render: function() {
+                CrudEngine.init('produtos');
+                document.getElementById('view-crud').classList.add('hidden');
+                let qtd=0, custo=0, venda=0; const tbody = document.getElementById('prod-tbody'); tbody.innerHTML='';
+                db.produtos.forEach((p, idx) => {
+                    const e = Number(p.estoque)||0, pc = Number(p.preco_custo)||0, pv = Number(p.preco_venda)||0;
+                    qtd += e; custo += pc*e; venda += pv*e;
+                    tbody.innerHTML += `<tr><td>${p.nome||'-'}</td><td>${formatMoeda(pc)}</td><td>${formatMoeda(pv)}</td><td>${e}</td><td>${formatMoeda(pv*e)}</td><td><button class="btn btn-warning" onclick="CrudEngine.modal(${idx})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger" onclick="CrudEngine.del(${idx}); ProdutosManager.render();"><i class="fas fa-trash"></i></button></td></tr>`;
+                });
+                if(!db.produtos.length) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Nenhum produto cadastrado.</td></tr>';
+                document.getElementById('prod-qtd').innerText = qtd;
+                document.getElementById('prod-custo').innerText = formatMoeda(custo);
+                document.getElementById('prod-venda').innerText = formatMoeda(venda);
+                document.getElementById('prod-lucro').innerText = formatMoeda(venda-custo);
+            },
+            relatorioMensalPDF: function() {
+                const mes = new Date().toISOString().slice(0,7); const pdf = new window.jspdf.jsPDF('p','mm','a4'); let y=36;
+                let qtd=0, custo=0, venda=0;
+                (db.produtos || []).forEach(p => { const e=Number(p.estoque)||0, c=Number(p.preco_custo)||0, v=Number(p.preco_venda)||0; qtd+=e; custo+=c*e; venda+=v*e; });
+                FinanceiroManager.drawPdfHeader(pdf, 'Relatório Mensal de Produtos', `${db.config.nome || 'FinControl'} • Competência ${mes}`);
+                y = FinanceiroManager.drawResumoCards(pdf, [
+                    {label:'Itens em estoque', value:String(qtd), rgb:[0,86,179]},
+                    {label:'Custo total', value:formatMoeda(custo), rgb:[220,53,69]},
+                    {label:'Venda total', value:formatMoeda(venda), rgb:[40,167,69]},
+                    {label:'Lucro potencial', value:formatMoeda(venda-custo), rgb:[255,193,7]}
+                ], y);
+                pdf.setFontSize(12); pdf.text('Gráfico de estoque', 14, y); y += 4;
+                FinanceiroManager.drawBarChart(pdf, ['Custo','Venda','Lucro'], [custo,venda,Math.max(venda-custo,0)], 14, y, 182, 48); y += 58;
+                pdf.setFillColor(244,246,249); pdf.rect(14, y-6, 182, 8, 'F');
+                pdf.setFontSize(9); pdf.text('Produto', 16, y); pdf.text('Custo', 78, y); pdf.text('Venda', 106, y); pdf.text('Estoque', 134, y); pdf.text('Valor Estoque', 158, y); y+=6;
+                (db.produtos || []).forEach(p => { if(y>280){ pdf.addPage(); y=18; } const e=Number(p.estoque)||0, c=Number(p.preco_custo)||0, v=Number(p.preco_venda)||0; pdf.setFontSize(8); pdf.text(String(p.nome||'-').slice(0,34), 16, y); pdf.text(formatMoeda(c), 76, y); pdf.text(formatMoeda(v), 104, y); pdf.text(String(e), 136, y); pdf.text(formatMoeda(v*e), 158, y); y+=5; });
+                pdf.save(`Relatorio_Produtos_${mes}.pdf`);
+            }
+        };
+
+        // DASHBOARD E CONFIG
+        const Dashboard = {
+            render: function() {
+                document.getElementById('dash-clientes').innerText = db.clientes.length; document.getElementById('dash-os-abertas').innerText = db.os.filter(o=>o.status!=='Concluída').length; document.getElementById('dash-os-concluidas').innerText = db.os.filter(o=>o.status==='Concluída').length;
+                let s=0, r=0, d=0; const m = new Date().toISOString().slice(0,7);
+                db.financeiro.forEach(f=>{ if((f.data || '').startsWith(m)){ const v=Number(f.valor)||0; if(f.tipo==='Receita'){s+=v;r+=v;}else{s-=v;d+=v;} } });
+                document.getElementById('dash-saldo').innerText = formatMoeda(s);
+                if(window.chartFin) window.chartFin.destroy(); window.chartFin = new Chart(document.getElementById('chartFinanceiro'), { type: 'pie', data: { labels: ['Receitas','Despesas'], datasets: [{data:[r,d], backgroundColor:['#28a745','#dc3545']}] }, options:{responsive:true, maintainAspectRatio:false} });
+                const st={}; db.os.forEach(o=>st[o.status]=(st[o.status]||0)+1);
+                if(window.chartOS) window.chartOS.destroy(); window.chartOS = new Chart(document.getElementById('chartOS'), { type: 'bar', data: { labels: Object.keys(st), datasets: [{label:'Qtd', data:Object.values(st), backgroundColor:db.config.cor}] }, options:{responsive:true, maintainAspectRatio:false} });
+            }
+        };
+
+        const ConfigManager = {
+            load: function() { ['nome','cnpj','endereco','telefone','cor'].forEach(k => document.getElementById(`cfg-${k}`).value = db.config[k]||''); if(db.config.logo) { document.getElementById('cfg-logo-preview').src=db.config.logo; document.getElementById('cfg-logo-preview').style.display='block'; } },
+            save: function() {
+                ['nome','cnpj','endereco','telefone','cor'].forEach(k => db.config[k] = document.getElementById(`cfg-${k}`).value);
+                const file = document.getElementById('cfg-logo').files[0];
+                if(file) { const r=new FileReader(); r.onload=e=>{ db.config.logo=e.target.result; saveData(); applyTheme(); alert('Salvo!'); }; r.readAsDataURL(file); }
+                else { saveData(); applyTheme(); alert('Salvo!'); }
+            }
+        };
+
+        const BackupManager = {
+            export: ()=> { const a=document.createElement('a'); a.href="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(db)); a.download="Backup.json"; a.click(); },
+            import: ()=> { const f=document.getElementById('backup-file').files[0]; if(!f)return alert('Selecione um arquivo de backup .json.'); const r=new FileReader(); r.onload=e=>{ try { db=JSON.parse(e.target.result); migrateDB(); saveData(); location.reload(); } catch(err) { alert('Backup inválido ou corrompido.'); } }; r.readAsText(f); },
+            clearAll: ()=> { if(confirm('Apagar tudo?') && prompt('Digite SIM para apagar:')==='SIM') { localStorage.removeItem(DB_KEY); location.reload(); } }
+        };
+
+        const ModalManager = { open: id => document.getElementById(id).classList.remove('hidden'), close: id => document.getElementById(id).classList.add('hidden') };
+        window.onload = () => initDB();
+    </script>
+</body>
+</html>
